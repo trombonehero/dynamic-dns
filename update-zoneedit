@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Script to update a dynamic DNS entry managed by ZoneEdit.
+#
+# Usage:
+#  update-zoneedit [domain]
+#
+#  (with environment variable ZONEEDIT_CREDENTIALS set to
+#   "username:password")
+#
+# If the 'domain' parameter is omitted, the current hostname (as returned
+# by `hostname -f`) will be used.
+#
+
+# Make sure ZoneEdit credentials have been specified.
+if [ "$ZONEEDIT_CREDENTIALS" == "" ]; then
+	echo "ZONEEDIT_CREDENTIALS environment variable not set"
+	exit 1
+else
+	USERNAME=`echo $ZONEEDIT_CREDENTIALS | awk -F: '{ print $1 }'`
+fi
+
+# Use the domain given at the command line, or else our hostname.
+if [ "$1" == "" ]; then
+	DOMAIN=`hostname`
+else
+	DOMAIN="$1"
+fi
+
+# Print a message iff we're using an interactive shell.
+if [ "$PS1" != "" ]; then
+	echo "Updating DNS record for '$DOMAIN' with ZoneEdit user '$USERNAME'"
+fi
+
+# Fetch the ZoneEdit Dynamic DNS update page!
+HTTP_AUTH=basic:*:$ZONEEDIT_CREDENTIALS \
+	fetch -q -o - \
+	https://dynamic.zoneedit.com/auth/dynamic.html?host=$DOMAIN |\
+	grep -v "SUCCESS CODE="
+
